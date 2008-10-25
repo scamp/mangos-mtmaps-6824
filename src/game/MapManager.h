@@ -27,6 +27,7 @@
 #include "GridStates.h"
 
 class Transport;
+class MapUpdater;
 
 class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, ZThread::Mutex> >
 {
@@ -55,6 +56,10 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
 
         void Initialize(void);
         void Update(time_t);
+        
+        //update all creatures in maps in paralel
+        void UpdateAllMaps(uint32 diff);
+        bool HasUpdateAllMaps() { return this->i_NumThreads > 0;}
 
         inline void SetGridCleanUpDelay(uint32 t)
         {
@@ -138,5 +143,7 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
         IntervalTimer i_timer;
 
         uint32 i_MaxInstanceId;
+        int i_NumThreads;
+        MapUpdater* i_MapUpdater;
 };
 #endif
