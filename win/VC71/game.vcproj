@@ -842,6 +842,12 @@
 				RelativePath="..\..\src\game\GroupRefManager.h">
 			</File>
 			<File
+				RelativePath="..\..\src\game\MapUpdater.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\game\MapUpdater.h">
+			</File>
+			<File
 				RelativePath="..\..\src\game\HostilRefManager.cpp">
 			</File>
 			<File

@@ -805,7 +805,6 @@
 				/>
 			</FileConfiguration>
 		</File>
-
 		<File
 			RelativePath="..\..\src\shared\DelayExecutor.cpp"
 			>
@@ -814,7 +813,6 @@
 			RelativePath="..\..\src\shared\DelayExecutor.h"
 			>
 		</File>
-
 		<File
 			RelativePath="..\..\src\shared\ServiceWin32.cpp"
 			>
