@@ -137,14 +137,15 @@ void WorldSession::SendTrainerList( uint64 guid,std::string strTitle )
 
     if (!ci)
     {
-        sLog.outDebug( "WORLD: SendTrainerList - (%u) NO CREATUREINFO! (GUID: %u)", uint32(GUID_LOPART(guid)), guid );
+        sLog.outDebug( "WORLD: SendTrainerList - (GUID: %u) NO CREATUREINFO!",GUID_LOPART(guid) );
         return;
     }
 
     TrainerSpellData const* trainer_spells = unit->GetTrainerSpells();
     if(!trainer_spells)
     {
-        sLog.outDebug( "WORLD: SendTrainerList - Training spells not found for creature (GUID: %u Entry: %u)", guid, unit->GetEntry());
+        sLog.outDebug( "WORLD: SendTrainerList - Training spells not found for creature (GUID: %u Entry: %u)",
+            GUID_LOPART(guid), unit->GetEntry());
         return;
     }
 
@@ -295,8 +296,8 @@ void WorldSession::HandleGossipHelloOpcode( WorldPacket & recv_data )
     if(!Script->GossipHello( _player, unit ))
     {
         _player->TalkedToCreature(unit->GetEntry(),unit->GetGUID());
-        unit->prepareGossipMenu(_player,0);
-        unit->sendPreparedGossip( _player );
+        unit->prepareGossipMenu(_player);
+        unit->sendPreparedGossip(_player);
     }
 }
 
@@ -335,14 +336,14 @@ void WorldSession::HandleGossipSelectOptionOpcode( WorldPacket & recv_data )
 
     if(!code.empty())
     {
-
-        if(!Script->GossipSelectWithCode( _player, unit, _player->PlayerTalkClass->GossipOptionSender( option ), _player->PlayerTalkClass->GossipOptionAction( option ), code.c_str()) )
-            unit->OnGossipSelect( _player, option );
+        if (!Script->GossipSelectWithCode(_player, unit, _player->PlayerTalkClass->GossipOptionSender (option), _player->PlayerTalkClass->GossipOptionAction( option ), code.c_str()))
+            unit->OnGossipSelect (_player, option);
     }
     else
-
-    if(!Script->GossipSelect( _player, unit, _player->PlayerTalkClass->GossipOptionSender( option ), _player->PlayerTalkClass->GossipOptionAction( option )) )
-        unit->OnGossipSelect( _player, option );
+    {
+        if (!Script->GossipSelect (_player, unit, _player->PlayerTalkClass->GossipOptionSender (option), _player->PlayerTalkClass->GossipOptionAction (option)))
+           unit->OnGossipSelect (_player, option);
+    }
 }
 
 void WorldSession::HandleSpiritHealerActivateOpcode( WorldPacket & recv_data )
@@ -371,7 +372,7 @@ void WorldSession::HandleSpiritHealerActivateOpcode( WorldPacket & recv_data )
 
 void WorldSession::SendSpiritResurrect()
 {
-    _player->ResurrectPlayer(0.5f,false, true);
+    _player->ResurrectPlayer(0.5f, true);
 
     _player->DurabilityLossAll(0.25f,true);
 

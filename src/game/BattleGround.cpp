@@ -510,7 +510,7 @@ void BattleGround::SendRewardMarkByMail(Player *plr,uint32 mark, uint32 count)
         int loc_idx = plr->GetSession()->GetSessionDbLocaleIndex();
         if ( loc_idx >= 0 )
             if(ItemLocale const *il = objmgr.GetItemLocale(markProto->ItemId))
-                if (il->Name.size() > loc_idx && !il->Name[loc_idx].empty())
+                if (il->Name.size() > size_t(loc_idx) && !il->Name[loc_idx].empty())
                     subject = il->Name[loc_idx];
 
         // text
@@ -997,7 +997,7 @@ bool BattleGround::DelCreature(uint32 type)
     Creature *cr = HashMapHolder<Creature>::Find(m_BgCreatures[type]);
     if(!cr)
     {
-        sLog.outError("Can't find creature guid: %u",m_BgCreatures[type]);
+        sLog.outError("Can't find creature guid: %u",GUID_LOPART(m_BgCreatures[type]));
         return false;
     }
     cr->CleanupsBeforeDelete();
@@ -1011,7 +1011,7 @@ bool BattleGround::DelObject(uint32 type)
     GameObject *obj = HashMapHolder<GameObject>::Find(m_BgObjects[type]);
     if(!obj)
     {
-        sLog.outError("Can't find gobject guid: %u",m_BgObjects[type]);
+        sLog.outError("Can't find gobject guid: %u",GUID_LOPART(m_BgObjects[type]));
         return false;
     }
     obj->SetRespawnTime(0);                                 // not save respawn time

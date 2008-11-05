@@ -1037,6 +1037,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         static bool IsBagPos( uint16 pos );
         static bool IsBankPos( uint16 pos ) { return IsBankPos(pos >> 8,pos & 255); }
         static bool IsBankPos( uint8 bag, uint8 slot );
+        bool IsValidPos( uint16 pos ) { return IsBankPos(pos >> 8,pos & 255); }
+        bool IsValidPos( uint8 bag, uint8 slot );
         bool HasBankBagSlot( uint8 slot ) const;
         bool HasItemCount( uint32 item, uint32 count, bool inBankAlso = false ) const;
         bool HasItemFitToSpellReqirements(SpellEntry const* spellInfo, Item const* ignoreItem = NULL);
@@ -1294,7 +1296,7 @@ class MANGOS_DLL_SPEC Player : public Unit
             if(d < 0)
                 SetMoney (GetMoney() > uint32(-d) ? GetMoney() + d : 0);
             else
-                SetMoney (GetMoney() < MAX_MONEY_AMOUNT - d ? GetMoney() + d : MAX_MONEY_AMOUNT);
+                SetMoney (GetMoney() < uint32(MAX_MONEY_AMOUNT - d) ? GetMoney() + d : MAX_MONEY_AMOUNT);
 
             // "At Gold Limit"
             if(GetMoney() >= MAX_MONEY_AMOUNT)
@@ -1628,7 +1630,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void CreateCorpse();
         void KillPlayer();
         uint32 GetResurrectionSpellId();
-        void ResurrectPlayer(float restore_percent, bool updateToWorld = true, bool applySickness = false);
+        void ResurrectPlayer(float restore_percent, bool applySickness = false);
         void BuildPlayerRepop();
         void RepopAtGraveyard();
 
@@ -1752,7 +1754,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void SetRegularAttackTime();
         void SetBaseModValue(BaseModGroup modGroup, BaseModType modType, float value) { m_auraBaseMod[modGroup][modType] = value; }
-        void HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, float amount, bool apply, bool affectStats = true);
+        void HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, float amount, bool apply);
         float GetBaseModValue(BaseModGroup modGroup, BaseModType modType) const;
         float GetTotalBaseModValue(BaseModGroup modGroup) const;
         float GetTotalPercentageModValue(BaseModGroup modGroup) const { return m_auraBaseMod[modGroup][FLAT_MOD] + m_auraBaseMod[modGroup][PCT_MOD]; }

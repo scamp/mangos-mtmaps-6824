@@ -109,7 +109,10 @@ struct GossipOption
     uint32 NpcFlag;
     uint32 Icon;
     uint32 Action;
-    std::string Option;
+    uint32 BoxMoney;
+    bool Coded;
+    std::string OptionText;
+    std::string BoxText;
 };
 
 enum CreatureFlagsExtra
@@ -162,9 +165,9 @@ struct CreatureInfo
     uint32  attackpower;
     uint32  baseattacktime;
     uint32  rangeattacktime;
-    uint32  Flags;
+    uint32  unit_flags;                                     // enum UnitFlags mask values
     uint32  dynamicflags;
-    uint32  family;
+    uint32  family;                                         // enum CreatureFamily values for type==CREATURE_TYPE_BEAST, or 0 in another cases
     uint32  trainer_type;
     uint32  trainer_spell;
     uint32  classNum;
@@ -172,8 +175,8 @@ struct CreatureInfo
     float   minrangedmg;
     float   maxrangedmg;
     uint32  rangedattackpower;
-    uint32  type;
-    uint32  flag1;
+    uint32  type;                                           // enum CreatureType values
+    uint32  type_flags;                                     // enum CreatureTypeFlags mask values
     uint32  lootid;
     uint32  pickpocketLootId;
     uint32  SkinLootId;
@@ -199,12 +202,34 @@ struct CreatureInfo
     uint32  MechanicImmuneMask;
     uint32  flags_extra;
     char const* ScriptName;
+
+    // helpers
+    SkillType GetRequiredLootSkill() const
+    {
+        if(type_flags & CREATURE_TYPEFLAGS_HERBLOOT)
+            return SKILL_HERBALISM;
+        else if(type_flags & CREATURE_TYPEFLAGS_MININGLOOT)
+            return SKILL_MINING;
+        else
+            return SKILL_SKINNING;                          // normal case
+    }
+
+    bool isTameable() const
+    {
+        return type == CREATURE_TYPE_BEAST && family != 0 && (type_flags & CREATURE_TYPEFLAGS_TAMEBLE);
+    }
 };
 
 struct CreatureLocale
 {
     std::vector<std::string> Name;
     std::vector<std::string> SubName;
+};
+
+struct NpcOptionLocale
+{
+    std::vector<std::string> OptionText;
+    std::vector<std::string> BoxText;
 };
 
 struct EquipmentInfo
@@ -467,8 +492,8 @@ class MANGOS_DLL_SPEC Creature : public Unit
         CreatureDataAddon const* GetCreatureAddon() const;
         char const* GetScriptName() const;
 
-        void prepareGossipMenu( Player *pPlayer,uint32 gossipid );
-        void sendPreparedGossip( Player* player);
+        void prepareGossipMenu( Player *pPlayer, uint32 gossipid = 0 );
+        void sendPreparedGossip( Player* player );
         void OnGossipSelect(Player* player, uint32 option);
         void OnPoiSelect(Player* player, GossipOption const *gossip);
 
@@ -562,6 +587,8 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         void SetCombatStartPosition(float x, float y, float z) { CombatStartX = x; CombatStartY = y; CombatStartZ = z; }
         void GetCombatStartPosition(float &x, float &y, float &z) { x = CombatStartX; y = CombatStartY; z = CombatStartZ; }
+
+        uint32 GetGlobalCooldown() const { return m_GlobalCooldown; }
 
     protected:
         bool CreateFromProto(uint32 guidlow,uint32 Entry,uint32 team, const CreatureData *data = NULL);

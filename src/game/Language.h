@@ -166,8 +166,9 @@ enum MangosStrings
 
     LANG_MAIL_SENT                      = 169,
     LANG_SOUND_NOT_EXIST                = 170,
-    LANG_TELEPORTED_TO_BY_CONSOLE       = 171,
-    // Room for more level 1              172-199 not used
+    //                                    171,              // not used
+    LANG_CONSOLE_COMMAND                = 172,
+    // Room for more level 1              173-199 not used
 
     // level 2 chat
     LANG_NO_SELECTION                   = 200,
@@ -316,7 +317,16 @@ enum MangosStrings
     LANG_GM_OFF                         = 333,
     LANG_GM_CHAT_ON                     = 334,
     LANG_GM_CHAT_OFF                    = 335,
-    // Room for more level 2              336-399 not used
+    LANG_YOU_REPAIR_ITEMS               = 336,
+    LANG_YOUR_ITEMS_REPAIRED            = 337,
+    LANG_YOU_SET_WATERWALK              = 338,
+    LANG_YOUR_WATERWALK_SET             = 339,
+    LANG_CREATURE_FOLLOW_YOU_NOW        = 340,
+    LANG_CREATURE_NOT_FOLLOW_YOU        = 341,
+    LANG_CREATURE_NOT_FOLLOW_YOU_NOW    = 342,
+    LANG_CREATURE_NON_TAMEABLE          = 343,
+    LANG_YOU_ALREADY_HAVE_PET           = 344,
+    // Room for more level 2              345-399 not used
 
     // level 3 chat
     LANG_SCRIPTS_RELOADED               = 400,
@@ -666,8 +676,8 @@ enum MangosStrings
     // Room for more level 4              1012-1099 not used
 
     // Level 3 (continue)
-    LANG_MOTD_NEW                       = 1100,
-    LANG_ACCOUNT_SETADDON               = 1101,
+    LANG_ACCOUNT_SETADDON               = 1100,
+    LANG_MOTD_NEW                       = 1101,
     LANG_SENDMESSAGE                    = 1102,
     LANG_EVENT_ENTRY_LIST_CONSOLE       = 1103,
     LANG_CREATURE_ENTRY_LIST_CONSOLE    = 1104,
@@ -685,7 +695,10 @@ enum MangosStrings
     LANG_INVALID_CHARACTER_GUID         = 1116,
     LANG_CHARACTER_GUID_IN_USE          = 1117,
     LANG_ITEMLIST_GUILD                 = 1118,
-    // Room for more level 3              1119-1199 not used
+    LANG_MUST_MALE_OR_FEMALE            = 1119,
+    LANG_YOU_CHANGE_GENDER              = 1120,
+    LANG_YOUR_GENDER_CHANGED            = 1121,
+    // Room for more level 3              1122-1199 not used
 
     // FREE IDS                           1200-9999
 

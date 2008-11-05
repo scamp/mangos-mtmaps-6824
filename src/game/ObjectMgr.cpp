@@ -563,6 +563,74 @@ void ObjectMgr::LoadCreatureLocales()
     sLog.outString( ">> Loaded %u creature locale strings", mCreatureLocaleMap.size() );
 }
 
+void ObjectMgr::LoadNpcOptionLocales()
+{
+    mNpcOptionLocaleMap.clear();                              // need for reload case
+
+    QueryResult *result = WorldDatabase.Query("SELECT entry,"
+        "option_text_loc1,box_text_loc1,option_text_loc2,box_text_loc2,"
+        "option_text_loc3,box_text_loc3,option_text_loc4,box_text_loc4,"
+        "option_text_loc5,box_text_loc5,option_text_loc6,box_text_loc6,"
+        "option_text_loc7,box_text_loc7,option_text_loc8,box_text_loc8 "
+        "FROM locales_npc_option");
+
+    if(!result)
+    {
+        barGoLink bar(1);
+
+        bar.step();
+
+        sLog.outString("");
+        sLog.outString(">> Loaded 0 npc_option locale strings. DB table `locales_npc_option` is empty.");
+        return;
+    }
+
+    barGoLink bar(result->GetRowCount());
+
+    do
+    {
+        Field *fields = result->Fetch();
+        bar.step();
+
+        uint32 entry = fields[0].GetUInt32();
+
+        NpcOptionLocale& data = mNpcOptionLocaleMap[entry];
+
+        for(int i = 1; i < MAX_LOCALE; ++i)
+        {
+            std::string str = fields[1+2*(i-1)].GetCppString();
+            if(!str.empty())
+            {
+                int idx = GetOrNewIndexForLocale(LocaleConstant(i));
+                if(idx >= 0)
+                {
+                    if(data.OptionText.size() <= idx)
+                        data.OptionText.resize(idx+1);
+
+                    data.OptionText[idx] = str;
+                }
+            }
+            str = fields[1+2*(i-1)+1].GetCppString();
+            if(!str.empty())
+            {
+                int idx = GetOrNewIndexForLocale(LocaleConstant(i));
+                if(idx >= 0)
+                {
+                    if(data.BoxText.size() <= idx)
+                        data.BoxText.resize(idx+1);
+
+                    data.BoxText[idx] = str;
+                }
+            }
+        }
+    } while (result->NextRow());
+
+    delete result;
+
+    sLog.outString();
+    sLog.outString( ">> Loaded %u npc_option locale strings", mNpcOptionLocaleMap.size() );
+}
+
 void ObjectMgr::LoadCreatureTemplates()
 {
     sCreatureStorage.Load();
@@ -2562,7 +2630,7 @@ void ObjectMgr::LoadGroups()
     uint64 leaderGuid = 0;
     uint32 count = 0;
     //                                                     0         1              2           3           4              5      6      7      8      9      10     11     12     13      14          15
-    QueryResult *result = CharacterDatabase.PQuery("SELECT mainTank, mainAssistant, lootMethod, looterGuid, lootThreshold, icon1, icon2, icon3, icon4, icon5, icon6, icon7, icon8, isRaid, difficulty, leaderGuid FROM groups");
+    QueryResult *result = CharacterDatabase.Query("SELECT mainTank, mainAssistant, lootMethod, looterGuid, lootThreshold, icon1, icon2, icon3, icon4, icon5, icon6, icon7, icon8, isRaid, difficulty, leaderGuid FROM groups");
 
     if( !result )
     {
@@ -2604,7 +2672,7 @@ void ObjectMgr::LoadGroups()
     group = NULL;
     leaderGuid = 0;
     //                                        0           1          2         3
-    result = CharacterDatabase.PQuery("SELECT memberGuid, assistant, subgroup, leaderGuid FROM group_member ORDER BY leaderGuid");
+    result = CharacterDatabase.Query("SELECT memberGuid, assistant, subgroup, leaderGuid FROM group_member ORDER BY leaderGuid");
     if(!result)
     {
         barGoLink bar( 1 );
@@ -2657,7 +2725,7 @@ void ObjectMgr::LoadGroups()
     count = 0;
     group = NULL;
     leaderGuid = 0;
-    result = CharacterDatabase.PQuery(
+    result = CharacterDatabase.Query(
         //      0           1    2         3          4           5
         "SELECT leaderGuid, map, instance, permanent, difficulty, resettime, "
         // 6
@@ -3525,7 +3593,7 @@ void ObjectMgr::LoadQuestLocales()
 
 void ObjectMgr::LoadPetCreateSpells()
 {
-    QueryResult *result = WorldDatabase.PQuery("SELECT entry, Spell1, Spell2, Spell3, Spell4 FROM petcreateinfo_spell");
+    QueryResult *result = WorldDatabase.Query("SELECT entry, Spell1, Spell2, Spell3, Spell4 FROM petcreateinfo_spell");
     if(!result)
     {
         barGoLink bar( 1 );
@@ -3734,19 +3802,22 @@ void ObjectMgr::LoadScripts(ScriptMapMap& scripts, char const* tablename)
 
                 if(float(tmp.datalong2) > DEFAULT_VISIBILITY_DISTANCE)
                 {
-                    sLog.outErrorDb("Table `%s` has too large distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u",tablename,tmp.datalong2,tmp.id);
+                    sLog.outErrorDb("Table `%s` has too large distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u",
+                        tablename,tmp.datalong2,tmp.id);
                     continue;
                 }
 
                 if(tmp.datalong2 && float(tmp.datalong2) > DEFAULT_VISIBILITY_DISTANCE)
                 {
-                    sLog.outErrorDb("Table `%s` has too large distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, max distance is %u or 0 for disable distance check",tablename,tmp.datalong2,tmp.id,uint32(DEFAULT_VISIBILITY_DISTANCE));
+                    sLog.outErrorDb("Table `%s` has too large distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, max distance is %f or 0 for disable distance check",
+                        tablename,tmp.datalong2,tmp.id,DEFAULT_VISIBILITY_DISTANCE);
                     continue;
                 }
 
                 if(tmp.datalong2 && float(tmp.datalong2) < INTERACTION_DISTANCE)
                 {
-                    sLog.outErrorDb("Table `%s` has too small distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, min distance is %u or 0 for disable distance check",tablename,tmp.datalong2,tmp.id,uint32(INTERACTION_DISTANCE));
+                    sLog.outErrorDb("Table `%s` has too small distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, min distance is %f or 0 for disable distance check",
+                        tablename,tmp.datalong2,tmp.id,INTERACTION_DISTANCE);
                     continue;
                 }
 
@@ -3758,7 +3829,8 @@ void ObjectMgr::LoadScripts(ScriptMapMap& scripts, char const* tablename)
             {
                 if(!sSpellStore.LookupEntry(tmp.datalong))
                 {
-                    sLog.outErrorDb("Table `%s` using non-existent spell (id: %u) in SCRIPT_COMMAND_REMOVE_AURA or SCRIPT_COMMAND_CAST_SPELL for script id %u",tablename,tmp.datalong,tmp.id);
+                    sLog.outErrorDb("Table `%s` using non-existent spell (id: %u) in SCRIPT_COMMAND_REMOVE_AURA or SCRIPT_COMMAND_CAST_SPELL for script id %u",
+                        tablename,tmp.datalong,tmp.id);
                     continue;
                 }
                 break;
@@ -3905,7 +3977,7 @@ void ObjectMgr::LoadEventScripts()
 
 void ObjectMgr::LoadItemTexts()
 {
-    QueryResult *result = CharacterDatabase.PQuery("SELECT id, text FROM item_text");
+    QueryResult *result = CharacterDatabase.Query("SELECT id, text FROM item_text");
 
     uint32 count = 0;
 
@@ -3988,7 +4060,7 @@ void ObjectMgr::LoadPageTextLocales()
 {
     mPageTextLocaleMap.clear();                             // need for reload case
 
-    QueryResult *result = WorldDatabase.PQuery("SELECT entry,text_loc1,text_loc2,text_loc3,text_loc4,text_loc5,text_loc6,text_loc7,text_loc8 FROM locales_page_text");
+    QueryResult *result = WorldDatabase.Query("SELECT entry,text_loc1,text_loc2,text_loc3,text_loc4,text_loc5,text_loc6,text_loc7,text_loc8 FROM locales_page_text");
 
     if(!result)
     {
@@ -5499,7 +5571,7 @@ void ObjectMgr::LoadCorpses()
 {
     uint32 count = 0;
     //                                                     0           1           2           3            4    5     6     7            8         10
-    QueryResult *result = CharacterDatabase.PQuery("SELECT position_x, position_y, position_z, orientation, map, data, time, corpse_type, instance, guid FROM corpse WHERE corpse_type <> 0");
+    QueryResult *result = CharacterDatabase.Query("SELECT position_x, position_y, position_z, orientation, map, data, time, corpse_type, instance, guid FROM corpse WHERE corpse_type <> 0");
 
     if( !result )
     {
@@ -5863,7 +5935,7 @@ void ObjectMgr::LoadReservedPlayersNames()
 {
     m_ReservedNames.clear();                                // need for reload case
 
-    QueryResult *result = WorldDatabase.PQuery("SELECT name FROM reserved_name");
+    QueryResult *result = WorldDatabase.Query("SELECT name FROM reserved_name");
 
     uint32 count = 0;
 
@@ -6381,6 +6453,10 @@ bool PlayerCondition::Meets(Player const * player) const
                     return true;
             return false;
         }
+        case CONDITION_NO_AURA:
+            return !player->HasAura(value1, value2);
+        case CONDITION_ACTIVE_EVENT:
+            return gameeventmgr.IsActiveEvent(value1);
         default:
             return false;
     }
@@ -6501,6 +6577,30 @@ bool PlayerCondition::IsValid(ConditionType condition, uint32 value1, uint32 val
                 sLog.outErrorDb("Quest condition has useless data in value2 (%u)!", value2);
             break;
         }
+        case CONDITION_NO_AURA:
+        {
+            if(!sSpellStore.LookupEntry(value1))
+            {
+                sLog.outErrorDb("Aura condition requires to have non existing spell (Id: %d), skipped", value1);
+                return false;
+            }
+            if(value2 > 2)
+            {
+                sLog.outErrorDb("Aura condition requires to have non existing effect index (%u) (must be 0..2), skipped", value2);
+                return false;
+            }
+            break;
+        }
+        case CONDITION_ACTIVE_EVENT:
+        {
+            GameEvent::GameEventDataMap const& events = gameeventmgr.GetEventMap();
+            if(value1 >=events.size() || !events[value1].isValid())
+            {
+                sLog.outErrorDb("Active event condition requires existed event id (%u), skipped", value1);
+                return false;
+            }
+            break;
+        }
     }
     return true;
 }
@@ -6610,11 +6710,15 @@ GameTele const* ObjectMgr::GetGameTele(std::string name) const
     // converting string that we try to find to lower case
     wstrToLower( wname );
 
+    // Alternative first GameTele what contains wnameLow as substring in case no GameTele location found
+    const GameTele* alt = NULL;
     for(GameTeleMap::const_iterator itr = m_GameTeleMap.begin(); itr != m_GameTeleMap.end(); ++itr)
         if(itr->second.wnameLow == wname)
             return &itr->second;
+        else if (alt == NULL && itr->second.wnameLow.find(wname) != std::wstring::npos)
+            alt = &itr->second;
 
-    return NULL;
+    return alt;
 }
 
 bool ObjectMgr::AddGameTele(GameTele& tele)
@@ -6671,7 +6775,7 @@ void ObjectMgr::LoadTrainerSpell()
 
     std::set<uint32> skip_trainers;
 
-    QueryResult *result = WorldDatabase.PQuery("SELECT entry, spell,spellcost,reqskill,reqskillvalue,reqlevel FROM npc_trainer");
+    QueryResult *result = WorldDatabase.Query("SELECT entry, spell,spellcost,reqskill,reqskillvalue,reqlevel FROM npc_trainer");
 
     if( !result )
     {
@@ -6762,7 +6866,7 @@ void ObjectMgr::LoadVendors()
 
     std::set<uint32> skip_vendors;
 
-    QueryResult *result = WorldDatabase.PQuery("SELECT entry, item, maxcount, incrtime, ExtendedCost FROM npc_vendor");
+    QueryResult *result = WorldDatabase.Query("SELECT entry, item, maxcount, incrtime, ExtendedCost FROM npc_vendor");
     if( !result )
     {
         barGoLink bar( 1 );
@@ -6808,7 +6912,7 @@ void ObjectMgr::LoadNpcTextId()
 
     m_mCacheNpcTextIdMap.clear();
 
-    QueryResult* result = WorldDatabase.PQuery("SELECT npc_guid, textid FROM npc_gossip");
+    QueryResult* result = WorldDatabase.Query("SELECT npc_guid, textid FROM npc_gossip");
     if( !result )
     {
         barGoLink bar( 1 );
@@ -6852,6 +6956,58 @@ void ObjectMgr::LoadNpcTextId()
 
     sLog.outString();
     sLog.outString( ">> Loaded %d NpcTextId ", count );
+}
+
+void ObjectMgr::LoadNpcOptions()
+{
+    m_mCacheNpcOptionList.clear();                          // For reload case
+
+    QueryResult *result = WorldDatabase.Query(
+        //      0  1         2       3    4      5         6     7           8
+        "SELECT id,gossip_id,npcflag,icon,action,box_money,coded,option_text,box_text "
+        "FROM npc_option");
+
+    if( !result )
+    {
+        barGoLink bar( 1 );
+
+        bar.step();
+
+        sLog.outString();
+        sLog.outErrorDb(">> Loaded `npc_option`, table is empty!");
+        return;
+    }
+
+    barGoLink bar( result->GetRowCount() );
+
+    uint32 count = 0;
+
+    do
+    {
+        bar.step();
+
+        Field* fields = result->Fetch();
+
+        GossipOption go;
+        go.Id               = fields[0].GetUInt32();
+        go.GossipId         = fields[1].GetUInt32();
+        go.NpcFlag          = fields[2].GetUInt32();
+        go.Icon             = fields[3].GetUInt32();
+        go.Action           = fields[4].GetUInt32();
+        go.BoxMoney         = fields[5].GetUInt32();
+        go.Coded            = fields[6].GetUInt8()!=0;
+        go.OptionText       = fields[7].GetCppString();
+        go.BoxText          = fields[8].GetCppString();
+
+        m_mCacheNpcOptionList.push_back(go);
+
+        ++count;
+
+    } while (result->NextRow());
+    delete result;
+
+    sLog.outString();
+    sLog.outString( ">> Loaded %d npc_option entries", count );
 }
 
 void ObjectMgr::AddVendorItem( uint32 entry,uint32 item, uint32 maxcount, uint32 incrtime, uint32 extendedcost )

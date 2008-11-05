@@ -100,6 +100,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "drunk",          SEC_MODERATOR,      false, &ChatHandler::HandleDrunkCommand,               "", NULL },
         { "standstate",     SEC_GAMEMASTER,     false, &ChatHandler::HandleStandStateCommand,          "", NULL },
         { "morph",          SEC_GAMEMASTER,     false, &ChatHandler::HandleMorphCommand,               "", NULL },
+        { "gender",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleModifyGenderCommand,        "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
@@ -228,6 +229,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "item_loot_template",          SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLootTemplatesItemCommand,       "", NULL },
         { "mangos_string",               SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadMangosStringCommand,            "", NULL },
         { "npc_gossip",                  SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadNpcGossipCommand,               "", NULL },
+        { "npc_option",                  SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadNpcOptionCommand,               "", NULL },
         { "npc_trainer",                 SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadNpcTrainerCommand,              "", NULL },
         { "npc_vendor",                  SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadNpcVendorCommand,               "", NULL },
         { "page_text",                   SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadPageTextsCommand,               "", NULL },
@@ -356,26 +358,29 @@ ChatCommand * ChatHandler::getCommandTable()
 
     static ChatCommand npcCommandTable[] =
     {
-        { "say",            SEC_MODERATOR,      false, &ChatHandler::HandleSayCommand,                 "", NULL },
-        { "whisper",        SEC_MODERATOR,      false, &ChatHandler::HandleNpcWhisperCommand,          "", NULL },
-        { "yell",           SEC_MODERATOR,      false, &ChatHandler::HandleYellCommand,                "", NULL },
-        { "textemote",      SEC_MODERATOR,      false, &ChatHandler::HandleTextEmoteCommand,           "", NULL },
-        { "add",            SEC_GAMEMASTER,     false, &ChatHandler::HandleAddSpwCommand,              "", NULL },
-        { "delete",         SEC_GAMEMASTER,     false, &ChatHandler::HandleDelCreatureCommand,         "", NULL },
-        { "spawndist",      SEC_GAMEMASTER,     false, &ChatHandler::HandleSpawnDistCommand,           "", NULL },
-        { "spawntime",      SEC_GAMEMASTER,     false, &ChatHandler::HandleSpawnTimeCommand,           "", NULL },
-        { "factionid",      SEC_GAMEMASTER,     false, &ChatHandler::HandleFactionIdCommand,           "", NULL },
-        { "addmove",        SEC_GAMEMASTER,     false, &ChatHandler::HandleAddMoveCommand,             "", NULL },
-        { "setmovetype",    SEC_GAMEMASTER,     false, &ChatHandler::HandleSetMoveTypeCommand,         "", NULL },
-        { "move",           SEC_GAMEMASTER,     false, &ChatHandler::HandleMoveCreatureCommand,        "", NULL },
+        { "say",            SEC_MODERATOR,      false, &ChatHandler::HandleNpcSayCommand,              "", NULL },
+        { "textemote",      SEC_MODERATOR,      false, &ChatHandler::HandleNpcTextEmoteCommand,        "", NULL },
+        { "add",            SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcAddCommand,              "", NULL },
+        { "delete",         SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcDeleteCommand,           "", NULL },
+        { "spawndist",      SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSpawnDistCommand,        "", NULL },
+        { "spawntime",      SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSpawnTimeCommand,        "", NULL },
+        { "factionid",      SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcFactionIdCommand,        "", NULL },
+        { "addmove",        SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcAddMoveCommand,          "", NULL },
+        { "setmovetype",    SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSetMoveTypeCommand,      "", NULL },
+        { "move",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcMoveCommand,             "", NULL },
         { "changelevel",    SEC_GAMEMASTER,     false, &ChatHandler::HandleChangeLevelCommand,         "", NULL },
-        { "setmodel",       SEC_GAMEMASTER,     false, &ChatHandler::HandleSetModelCommand,            "", NULL },
+        { "setmodel",       SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSetModelCommand,         "", NULL },
         { "additem",        SEC_GAMEMASTER,     false, &ChatHandler::HandleAddVendorItemCommand,       "", NULL },
         { "delitem",        SEC_GAMEMASTER,     false, &ChatHandler::HandleDelVendorItemCommand,       "", NULL },
-        { "flag",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNPCFlagCommand,             "", NULL },
-        { "changeentry",    SEC_ADMINISTRATOR,  false, &ChatHandler::HandleChangeEntryCommand,         "", NULL },
+        { "flag",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcFlagCommand,             "", NULL },
+        { "changeentry",    SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcChangeEntryCommand,      "", NULL },
         { "info",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcInfoCommand,             "", NULL },
-        { "playemote",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandlePlayEmoteCommand,           "", NULL },
+        { "playemote",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcPlayEmoteCommand,        "", NULL },
+        { "follow",         SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcFollowCommand,           "", NULL },
+        { "unfollow",       SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcUnFollowCommand,         "", NULL },
+        { "whisper",        SEC_MODERATOR,      false, &ChatHandler::HandleNpcWhisperCommand,          "", NULL },
+        { "yell",           SEC_MODERATOR,      false, &ChatHandler::HandleNpcYellCommand,             "", NULL },
+        { "tame",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcTameCommand,             "", NULL },
 
         //{ TODO: fix or remove this commands
         { "name",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNameCommand,                "", NULL },
@@ -526,6 +531,8 @@ ChatCommand * ChatHandler::getCommandTable()
         { "combatstop",     SEC_GAMEMASTER,     false, &ChatHandler::HandleCombatStopCommand,          "", NULL },
         { "chardelete",     SEC_CONSOLE,        true,  &ChatHandler::HandleCombatStopCommand,          "", NULL },
         { "sendmessage",    SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleSendMessageCommand,         "", NULL },
+        { "repairitems",    SEC_GAMEMASTER,     false, &ChatHandler::HandleRepairitemsCommand,         "", NULL },
+        { "waterwalk",      SEC_GAMEMASTER,     false, &ChatHandler::HandleWaterwalkCommand,           "", NULL },
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
@@ -786,7 +793,13 @@ bool ChatHandler::ShowHelpForSubCommands(ChatCommand *table, char const* cmd, ch
         if( *subcmd && !hasStringAbbr(table[i].Name, subcmd))
             continue;
 
-        (list += "\n    ") += table[i].Name;
+        if(m_session)
+            list += "\n    ";
+        else
+            list += "\n\r    ";
+
+        list += table[i].Name;
+
         if(table[i].ChildCommands)
             list += " ...";
     }
@@ -1187,6 +1200,17 @@ GameTele const* ChatHandler::extractGameTeleFromLink(char* text)
     return objmgr.GetGameTele(cId);
 }
 
+const char *ChatHandler::GetName() const
+{
+    return m_session->GetPlayer()->GetName();
+}
+
+bool ChatHandler::needReportToTarget(Player* chr) const
+{
+    Player* pl = m_session->GetPlayer();
+    return pl != chr && pl->IsVisibleGloballyFor(chr);
+}
+
 const char *CliHandler::GetMangosString(int32 entry) const
 {
     return objmgr.GetMangosStringForDBCLocale(entry);
@@ -1203,3 +1227,14 @@ void CliHandler::SendSysMessage(const char *str)
     m_print(str);
     m_print("\r\n");
 }
+
+const char *CliHandler::GetName() const
+{
+    return GetMangosString(LANG_CONSOLE_COMMAND);
+}
+
+bool CliHandler::needReportToTarget(Player* /*chr*/) const
+{
+    return true;
+}
+

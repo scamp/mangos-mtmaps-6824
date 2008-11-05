@@ -100,6 +100,7 @@ bool ChatHandler::HandleReloadAllLootCommand(const char*)
 bool ChatHandler::HandleReloadAllNpcCommand(const char* /*args*/)
 {
     HandleReloadNpcGossipCommand("a");
+    HandleReloadNpcOptionCommand("a");
     HandleReloadNpcTrainerCommand("a");
     HandleReloadNpcVendorCommand("a");
     return true;
@@ -158,7 +159,7 @@ bool ChatHandler::HandleReloadAllItemCommand(const char*)
     return true;
 }
 
-bool ChatHandler::HandleReloadAllLocalesCommand(const char* args)
+bool ChatHandler::HandleReloadAllLocalesCommand(const char* /*args*/)
 {
     HandleReloadLocalesCreatureCommand("a");
     HandleReloadLocalesGameobjectCommand("a");
@@ -169,7 +170,7 @@ bool ChatHandler::HandleReloadAllLocalesCommand(const char* args)
     return true;
 }
 
-bool ChatHandler::HandleReloadConfigCommand(const char* arg)
+bool ChatHandler::HandleReloadConfigCommand(const char* /*args*/)
 {
     sLog.outString( "Re-Loading config settings..." );
     sWorld.LoadConfigSettings(true);
@@ -342,6 +343,14 @@ bool ChatHandler::HandleReloadMangosStringCommand(const char*)
     sLog.outString( "Re-Loading mangos_string Table!" );
     objmgr.LoadMangosStrings();
     SendGlobalSysMessage("DB table `mangos_string` reloaded.");
+    return true;
+}
+
+bool ChatHandler::HandleReloadNpcOptionCommand(const char*)
+{
+    sLog.outString( "Re-Loading `npc_option` Table!" );
+    objmgr.LoadNpcOptions();
+    SendGlobalSysMessage("DB table `npc_option` reloaded.");
     return true;
 }
 
@@ -732,7 +741,7 @@ bool ChatHandler::HandleAccountSetGmLevelCommand(const char* args)
 
     if(targetPlayer)
     {
-        ChatHandler(targetPlayer).PSendSysMessage(LANG_YOURS_SECURITY_CHANGED,m_session->GetPlayer()->GetName(), gm);
+        ChatHandler(targetPlayer).PSendSysMessage(LANG_YOURS_SECURITY_CHANGED,GetName(), gm);
         targetPlayer->GetSession()->SetSecurity(gm);
     }
 
@@ -1979,44 +1988,45 @@ bool ChatHandler::HandleAddItemSetCommand(const char* args)
 
     sLog.outDetail(GetMangosString(LANG_ADDITEMSET), itemsetId);
 
-    QueryResult *result = WorldDatabase.PQuery("SELECT entry FROM item_template WHERE itemset = %u",itemsetId);
+    bool found = false;
+    for (uint32 id = 0; id < sItemStorage.MaxEntry; id++)
+    {
+        ItemPrototype const *pProto = sItemStorage.LookupEntry<ItemPrototype>(id);
+        if (!pProto)
+            continue;
 
-    if(!result)
+        if (pProto->ItemSet == itemsetId)
+        {
+            found = true;
+            ItemPosCountVec dest;
+            uint8 msg = plTarget->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, pProto->ItemId, 1 );
+            if (msg == EQUIP_ERR_OK)
+            {
+                Item* item = plTarget->StoreNewItem( dest, pProto->ItemId, true);
+
+                // remove binding (let GM give it to another player later)
+                if (pl==plTarget)
+                    item->SetBinding( false );
+
+                pl->SendNewItem(item,1,false,true);
+                if (pl!=plTarget)
+                    plTarget->SendNewItem(item,1,true,false);
+            }
+            else
+            {
+                pl->SendEquipError( msg, NULL, NULL );
+                PSendSysMessage(LANG_ITEM_CANNOT_CREATE, pProto->ItemId, 1);
+            }
+        }
+    }
+
+    if (!found)
     {
         PSendSysMessage(LANG_NO_ITEMS_FROM_ITEMSET_FOUND,itemsetId);
 
         SetSentErrorMessage(true);
         return false;
     }
-
-    do
-    {
-        Field *fields = result->Fetch();
-        uint32 itemId = fields[0].GetUInt32();
-
-        ItemPosCountVec dest;
-        uint8 msg = plTarget->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, itemId, 1 );
-        if( msg == EQUIP_ERR_OK )
-        {
-            Item* item = plTarget->StoreNewItem( dest, itemId, true);
-
-            // remove binding (let GM give it to another player later)
-            if(pl==plTarget)
-                item->SetBinding( false );
-
-            pl->SendNewItem(item,1,false,true);
-            if(pl!=plTarget)
-                plTarget->SendNewItem(item,1,true,false);
-        }
-        else
-        {
-            pl->SendEquipError( msg, NULL, NULL );
-            PSendSysMessage(LANG_ITEM_CANNOT_CREATE, itemId, 1);
-        }
-
-    }while( result->NextRow() );
-
-    delete result;
 
     return true;
 }
@@ -3591,7 +3601,7 @@ bool ChatHandler::HandleNearGraveCommand(const char* args)
 }
 
 //play npc emote
-bool ChatHandler::HandlePlayEmoteCommand(const char* args)
+bool ChatHandler::HandleNpcPlayEmoteCommand(const char* args)
 {
     uint32 emote = atoi((char*)args);
 
@@ -3671,14 +3681,14 @@ bool ChatHandler::HandleExploreCheatCommand(const char* args)
     if (flag != 0)
     {
         PSendSysMessage(LANG_YOU_SET_EXPLORE_ALL, chr->GetName());
-        if(chr!=m_session->GetPlayer())
-            ChatHandler(chr).PSendSysMessage(LANG_YOURS_EXPLORE_SET_ALL,m_session->GetPlayer()->GetName());
+        if (needReportToTarget(chr))
+            ChatHandler(chr).PSendSysMessage(LANG_YOURS_EXPLORE_SET_ALL,GetName());
     }
     else
     {
         PSendSysMessage(LANG_YOU_SET_EXPLORE_NOTHING, chr->GetName());
-        if(chr!=m_session->GetPlayer())
-            ChatHandler(chr).PSendSysMessage(LANG_YOURS_EXPLORE_SET_NOTHING,m_session->GetPlayer()->GetName());
+        if (needReportToTarget(chr))
+            ChatHandler(chr).PSendSysMessage(LANG_YOURS_EXPLORE_SET_NOTHING,GetName());
     }
 
     for (uint8 i=0; i<128; i++)
@@ -4669,16 +4679,18 @@ bool ChatHandler::HandleAddQuest(const char* args)
     }
 
     // check item starting quest (it can work incorrectly if added without item in inventory)
-    QueryResult *result = WorldDatabase.PQuery("SELECT entry FROM item_template WHERE startquest = '%u' LIMIT 1",entry);
-    if(result)
+    for (uint32 id = 0; id < sItemStorage.MaxEntry; id++)
     {
-        Field* fields = result->Fetch();
-        uint32 item_id = fields[0].GetUInt32();
-        delete result;
+        ItemPrototype const *pProto = sItemStorage.LookupEntry<ItemPrototype>(id);
+        if (!pProto)
+            continue;
 
-        PSendSysMessage(LANG_COMMAND_QUEST_STARTFROMITEM, entry,item_id);
-        SetSentErrorMessage(true);
-        return false;
+        if (pProto->StartQuest == entry)
+        {
+            PSendSysMessage(LANG_COMMAND_QUEST_STARTFROMITEM, entry, pProto->ItemId);
+            SetSentErrorMessage(true);
+            return false;
+        }
     }
 
     // ok, normal (creature/GO starting) quest
@@ -5308,6 +5320,22 @@ bool ChatHandler::HandleRespawnCommand(const char* /*args*/)
 {
     Player* pl = m_session->GetPlayer();
 
+    // accept only explictly selected target (not implicitly self targeting case)
+    Unit* target = getSelectedUnit();
+    if(pl->GetSelection() && target)
+    {
+        if(target->GetTypeId()!=TYPEID_UNIT)
+        {
+            SendSysMessage(LANG_SELECT_CREATURE);
+            SetSentErrorMessage(true);
+            return false;
+        }
+
+        if(target->isDead())
+            ((Creature*)target)->Respawn();
+        return true;
+    }
+
     CellPair p(MaNGOS::ComputeCellPair(pl->GetPositionX(), pl->GetPositionY()));
     Cell cell(p);
     cell.data.Part.reserved = ALL_DISTRICT;
@@ -5460,7 +5488,7 @@ bool ChatHandler::HandleLoadPDumpCommand(const char *args)
     return true;
 }
 
-bool ChatHandler::HandleChangeEntryCommand(const char *args)
+bool ChatHandler::HandleNpcChangeEntryCommand(const char *args)
 {
     if(!args)
         return false;
@@ -5726,7 +5754,7 @@ bool ChatHandler::HandleCastBackCommand(const char* args)
     caster->BuildHeartBeatMsg(&data);
     caster->SendMessageToSet(&data,true);
 
-    caster->CastSpell(m_session->GetPlayer(),spell,false);
+    caster->CastSpell(m_session->GetPlayer(),spell,triggered);
 
     return true;
 }
@@ -5817,7 +5845,7 @@ bool ChatHandler::HandleCastTargetCommand(const char* args)
     caster->BuildHeartBeatMsg(&data);
     caster->SendMessageToSet(&data,true);
 
-    caster->CastSpell(caster->getVictim(),spell,false);
+    caster->CastSpell(caster->getVictim(),spell,triggered);
 
     return true;
 }
@@ -6128,5 +6156,65 @@ bool ChatHandler::HandleSendMessageCommand(const char* args)
 
     //Confirmation message
     PSendSysMessage(LANG_SENDMESSAGE,name.c_str(),msg_str);
+    return true;
+}
+
+bool ChatHandler::HandleModifyGenderCommand(const char *args)
+{
+    if(!*args)
+        return false;
+
+    Player *player = getSelectedPlayer();
+
+    if(!player)
+    {
+        PSendSysMessage(LANG_NO_PLAYER);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    char const* gender_str = (char*)args;
+    int gender_len = strlen(gender_str);
+
+    uint32 displayId = player->GetNativeDisplayId();
+    char const* gender_full = NULL;
+    uint32 new_displayId = displayId;
+    Gender gender;
+
+    if(!strncmp(gender_str,"male",gender_len))              // MALE
+    {
+        if(player->getGender() == GENDER_MALE)
+            return true;
+
+        gender_full = "male";
+        new_displayId = player->getRace() == RACE_BLOODELF ? displayId+1 : displayId-1;
+        gender = GENDER_MALE;
+    }
+    else if (!strncmp(gender_str,"female",gender_len))      // FEMALE
+    {
+        if(player->getGender() == GENDER_FEMALE)
+            return true;
+
+        gender_full = "female";
+        new_displayId = player->getRace() == RACE_BLOODELF ? displayId-1 : displayId+1;
+        gender = GENDER_FEMALE;
+    }
+    else
+    {
+        SendSysMessage(LANG_MUST_MALE_OR_FEMALE);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    // Set gender
+    player->SetByteValue(UNIT_FIELD_BYTES_0, 2, gender);
+
+    // Change display ID
+    player->SetDisplayId(new_displayId);
+    player->SetNativeDisplayId(new_displayId);
+
+    PSendSysMessage(LANG_YOU_CHANGE_GENDER, player->GetName(),gender_full);
+    if (needReportToTarget(player))
+        ChatHandler(player).PSendSysMessage(LANG_YOUR_GENDER_CHANGED, gender_full,GetName());
     return true;
 }
