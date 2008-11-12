@@ -198,13 +198,16 @@ World::AddSession_ (WorldSession* s)
         return;
     }
 
-    WorldSession* old = m_sessions[s->GetAccountId ()];
-    m_sessions[s->GetAccountId ()] = s;
-
     // if session already exist, prepare to it deleting at next world update
     // NOTE - KickPlayer() should be called on "old" in RemoveSession()
-    if (old)
-        m_kicked_sessions.insert (old);
+    {
+      SessionMap::const_iterator old = m_sessions.find(s->GetAccountId ());
+
+      if(old != m_sessions.end())
+        m_kicked_sessions.insert (old->second);
+    }
+
+    m_sessions[s->GetAccountId ()] = s;
 
     uint32 Sessions = GetActiveAndQueuedSessionCount ();
     uint32 pLimit = GetPlayerAmountLimit ();
@@ -286,9 +289,7 @@ void World::RemoveQueuedPlayer(WorldSession* sess)
     {
         if(*iter==sess)
         {
-            Queue::iterator iter2 = iter;
-            ++iter;
-            m_QueuedPlayer.erase(iter2);
+            iter = m_QueuedPlayer.erase(iter);
             decrease_session = false;                       // removing queued session
             break;
         }
@@ -1140,6 +1141,9 @@ void World::SetInitialWorldSettings()
     objmgr.LoadGameObjectScripts();                         // must be after load Creature/Gameobject(Template/Data)
     objmgr.LoadEventScripts();                              // must be after load Creature/Gameobject(Template/Data)
 
+    sLog.outString( "Loading Scripts text locales..." );    // must be after Load*Scripts calls
+    objmgr.LoadDbScriptStrings();
+
     sLog.outString( "Initializing Scripts..." );
     if(!LoadScriptingModule())
         exit(1);
@@ -1560,11 +1564,6 @@ void World::ScriptsProcess()
                     sLog.outError("SCRIPT_COMMAND_TALK call for non-creature (TypeId: %u), skipping.",source->GetTypeId());
                     break;
                 }
-                if(step.script->datalong > 3)
-                {
-                    sLog.outError("SCRIPT_COMMAND_TALK invalid chat type (%u), skipping.",step.script->datalong);
-                    break;
-                }
 
                 uint64 unit_target = target ? target->GetGUID() : 0;
 
@@ -1572,7 +1571,7 @@ void World::ScriptsProcess()
                 switch(step.script->datalong)
                 {
                     case 0:                                 // Say
-                        ((Creature *)source)->Say(step.script->datatext.c_str(), LANG_UNIVERSAL, unit_target);
+                        ((Creature *)source)->Say(step.script->dataint, LANG_UNIVERSAL, unit_target);
                         break;
                     case 1:                                 // Whisper
                         if(!unit_target)
@@ -1580,13 +1579,13 @@ void World::ScriptsProcess()
                             sLog.outError("SCRIPT_COMMAND_TALK attempt to whisper (%u) NULL, skipping.",step.script->datalong);
                             break;
                         }
-                        ((Creature *)source)->Whisper(step.script->datatext.c_str(),unit_target);
+                        ((Creature *)source)->Whisper(step.script->dataint,unit_target);
                         break;
                     case 2:                                 // Yell
-                        ((Creature *)source)->Yell(step.script->datatext.c_str(), LANG_UNIVERSAL, unit_target);
+                        ((Creature *)source)->Yell(step.script->dataint, LANG_UNIVERSAL, unit_target);
                         break;
                     case 3:                                 // Emote text
-                        ((Creature *)source)->TextEmote(step.script->datatext.c_str(), unit_target);
+                        ((Creature *)source)->TextEmote(step.script->dataint, unit_target);
                         break;
                     default:
                         break;                              // must be already checked at load

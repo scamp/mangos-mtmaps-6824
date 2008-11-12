@@ -418,7 +418,7 @@ Map::LoadGrid(const Cell& cell, bool no_unload)
 
 bool Map::Add(Player *player)
 {
-    player->SetInstanceId(this->GetInstanceId());
+    player->SetInstanceId(GetInstanceId());
 
     // update player state for other player and visa-versa
     CellPair p = MaNGOS::ComputeCellPair(player->GetPositionX(), player->GetPositionY());
@@ -1382,7 +1382,7 @@ void Map::RemoveAllObjectsInRemoveList()
             Remove((GameObject*)obj,true);
             break;
         case TYPEID_UNIT:
-            // in case triggred sequence some spell can continue casting after prev CleanupsBeforeDelete call
+            // in case triggered sequence some spell can continue casting after prev CleanupsBeforeDelete call
             // make sure that like sources auras/etc removed before destructor start
             ((Creature*)obj)->CleanupsBeforeDelete ();
             Remove((Creature*)obj,true);

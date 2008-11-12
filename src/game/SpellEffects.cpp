@@ -708,7 +708,7 @@ void Spell::EffectDummy(uint32 i)
                 }
                 case 13567:                                 // Dummy Trigger
                 {
-                    // can be used for different aura triggreing, so select by aura
+                    // can be used for different aura triggering, so select by aura
                     if(!m_triggeredByAuraSpell || !unitTarget)
                         return;
 
@@ -2228,7 +2228,7 @@ void Spell::EffectSendEvent(uint32 EffectIndex)
                 case 23333:                                 // Pickup Horde Flag
                     /*do not uncomment .
                     if(bg->GetTypeID()==BATTLEGROUND_WS)
-                        bg->EventPlayerClickedOnFlag((Player*)m_caster, this->gameObjTarget);
+                        bg->EventPlayerClickedOnFlag((Player*)m_caster, gameObjTarget);
                     sLog.outDebug("Send Event Horde Flag Picked Up");
                     break;
                     /* not used :
@@ -2241,7 +2241,7 @@ void Spell::EffectSendEvent(uint32 EffectIndex)
                 case 23335:                                 // Pickup Alliance Flag
                     /*do not uncomment ... (it will cause crash, because of null targetobject!) anyway this is a bad way to call that event, because it would cause recursion
                     if(bg->GetTypeID()==BATTLEGROUND_WS)
-                        bg->EventPlayerClickedOnFlag((Player*)m_caster, this->gameObjTarget);
+                        bg->EventPlayerClickedOnFlag((Player*)m_caster, gameObjTarget);
                     sLog.outDebug("Send Event Alliance Flag Picked Up");
                     break;
                     /* not used :
@@ -2252,18 +2252,18 @@ void Spell::EffectSendEvent(uint32 EffectIndex)
                         break;
                     case 23385:                                 // Alliance Flag Returns
                         if(bg->GetTypeID()==BATTLEGROUND_WS)
-                            bg->EventPlayerClickedOnFlag((Player*)m_caster, this->gameObjTarget);
+                            bg->EventPlayerClickedOnFlag((Player*)m_caster, gameObjTarget);
                         sLog.outDebug("Alliance Flag Returned");
                         break;
                     case 23386:                                   // Horde Flag Returns
                         if(bg->GetTypeID()==BATTLEGROUND_WS)
-                            bg->EventPlayerClickedOnFlag((Player*)m_caster, this->gameObjTarget);
+                            bg->EventPlayerClickedOnFlag((Player*)m_caster, gameObjTarget);
                         sLog.outDebug("Horde Flag Returned");
                         break;*/
                 case 34976:
                     /*
                     if(bg->GetTypeID()==BATTLEGROUND_EY)
-                        bg->EventPlayerClickedOnFlag((Player*)m_caster, this->gameObjTarget);
+                        bg->EventPlayerClickedOnFlag((Player*)m_caster, gameObjTarget);
                     */
                     break;
                 default:
@@ -2640,31 +2640,31 @@ void Spell::EffectEnergize(uint32 i)
         return;
 
     // Some level depends spells
-    int multipler  = 0;
+    int multiplier = 0;
     int level_diff = 0;
     switch (m_spellInfo->Id)
     {
         // Restore Energy
         case 9512:
             level_diff = m_caster->getLevel() - 40;
-            multipler  = 2;
+            multiplier = 2;
             break;
         // Blood Fury
         case 24571:
             level_diff = m_caster->getLevel() - 60;
-            multipler  = 10;
+            multiplier = 10;
             break;
         // Burst of Energy
         case 24532:
             level_diff = m_caster->getLevel() - 60;
-            multipler  = 4;
+            multiplier = 4;
             break;
         default:
             break;
     }
 
     if (level_diff > 0)
-        damage -= multipler * level_diff;
+        damage -= multiplier * level_diff;
 
     if(damage < 0)
         return;
@@ -3685,13 +3685,13 @@ void Spell::EffectAddHonor(uint32 /*i*/)
     if(unitTarget->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    sLog.outDebug("SpellEffect::AddHonor called for spell_id %u , that rewards %d honor points to player: %u", m_spellInfo->Id, this->damage, ((Player*)unitTarget)->GetGUIDLow());
+    sLog.outDebug("SpellEffect::AddHonor called for spell_id %u , that rewards %d honor points to player: %u", m_spellInfo->Id, damage, ((Player*)unitTarget)->GetGUIDLow());
 
     // TODO: find formula for honor reward based on player's level!
 
     // now fixed only for level 70 players:
     if (((Player*)unitTarget)->getLevel() == 70)
-        ((Player*)unitTarget)->RewardHonor(NULL, 1, this->damage);
+        ((Player*)unitTarget)->RewardHonor(NULL, 1, damage);
 }
 
 void Spell::EffectTradeSkill(uint32 /*i*/)
